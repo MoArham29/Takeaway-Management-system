@@ -19,6 +19,7 @@ std::string Supplier::getName() const { return name; }
 std::string Supplier::getPhone() const { return phone; }
 int Supplier::getTotalCreated() { return nextId - 1; }
 bool Supplier::operator<(const Supplier& other) const { return id < other.id; }
+bool Supplier::operator==(const Supplier& other) const { return id == other.id; }
 
 std::ostream& operator<<(std::ostream& out, const Supplier& s) {
     out << "Supplier #" << s.id << ": " << s.name << " (tel " << s.phone << ")";

@@ -1,106 +1,86 @@
 // LinkedList.h
-// Singly linked list template, adapted from the practical sessions.
-// In this system it stores Delivery* and DailyReport* objects in the order they happen.
-// The list does NOT own the objects it stores: Takeaway creates and deletes them.
-#pragma once                                   // Stops this header being included twice in one file
+// A linked list, adapted from the Session 13 and 17 practicals.
+// New items go on the front, so the newest is always first (like a bank statement).
+// Used to store every Transaction. The list deletes its items when it is destroyed.
+#pragma once                                   // Only include this file once
 
-#include "ListNode.h"                          // The node type the list is built from
+#include "Link.h"                              // The list is made of Links
 
-// ---------------------------------------------------------------------------
-// LinkedList: the list itself, with head and tail pointers.
-// ---------------------------------------------------------------------------
-template <typename T>                          // The same T as the nodes it holds
+template <class T>                             // T is the type of item stored (must be a pointer)
 class LinkedList {
 private:
-    ListNode<T>* head;                         // Pointer to the first node; nullptr when empty
-    ListNode<T>* tail;                         // Pointer to the last node, so append is O(1)
-    int count;                                 // Number of items currently in the list
+    Link<T>* first;                            // The first link (empty if the list is empty)
 
 public:
-    LinkedList() : head(nullptr), tail(nullptr), count(0) {}  // Constructor: starts empty
+    LinkedList() : first(nullptr) {}           // A new list starts empty
 
-    ~LinkedList() {                            // Destructor: frees every node
-        ListNode<T>* current = head;           // Start at the first node
-        while (current != nullptr) {           // Loop until the end of the list
-            ListNode<T>* nextNode = current->next;  // Remember the next node before deleting
-            delete current;                    // Free this node (not the item it points to)
-            current = nextNode;                // Move on to the remembered next node
+    ~LinkedList() {                            // When the list is destroyed...
+        while (!IsEmpty()) {                   // ...keep going until it is empty
+            Link<T>* link = Delete();          // Take the first link off the list
+            delete link->data;                 // Delete the item it held
+            delete link;                       // Delete the link itself
         }
     }
 
-    LinkedList(const LinkedList&) = delete;    // Copying disabled: two lists must not share nodes
-    LinkedList& operator=(const LinkedList&) = delete;  // Assignment disabled for the same reason
+    LinkedList(const LinkedList&) = delete;    // Stop the list being copied (two copies would delete the same items)
+    LinkedList& operator=(const LinkedList&) = delete;  // Stop the list being assigned for the same reason
 
-    void append(T data) {                      // Adds an item to the end of the list
-        ListNode<T>* node = new ListNode<T>(data);  // Allocate a new node on the heap
-        if (head == nullptr) {                 // List is empty
-            head = node;                       // The new node is the first node
-            tail = node;                       // ...and also the last node
-        } else {                               // List already has nodes
-            tail->next = node;                 // Link the old last node to the new node
-            tail = node;                       // The new node is now the last node
+    bool IsEmpty() const {                     // Is the list empty?
+        return (first == nullptr);             // It is empty if there is no first link
+    }
+
+    void Insert(Link<T>* newLink) {            // Adds a link to the front of the list
+        newLink->next = first;                 // The new link points to the old first link
+        first = newLink;                       // The new link is now first
+    }
+
+    Link<T>* Find(int key) const {             // Finds the link with this number (empty if not found)
+        Link<T>* current = first;              // Start at the first link
+        while (current != nullptr) {           // Check every link in turn
+            if (current->key == key)           // Is this the one?
+                return current;                // Yes: give it back
+            current = current->next;           // No: move to the next link
         }
-        count++;                               // One more item in the list
+        return nullptr;                        // Not found
     }
 
-    bool contains(T data) const {              // Returns true if this exact item is in the list
-        ListNode<T>* current = head;           // Start at the first node
-        while (current != nullptr) {           // Check every node in turn
-            if (current->data == data)         // Compare the stored item with the one wanted
-                return true;                   // Found it
-            current = current->next;           // Move to the next node
+    Link<T>* Delete() {                        // Takes the first link off the list and gives it back
+        Link<T>* temp = first;                 // Remember the first link
+        first = first->next;                   // The second link becomes first
+        return temp;                           // Give back the removed link
+    }
+
+    Link<T>* Delete(int key) {                 // Takes the link with this number off the list (empty if not found)
+        Link<T>* current = first;              // The link we are checking
+        Link<T>* previous = nullptr;           // The link before it
+        while (current != nullptr && current->key != key) {  // Search, remembering the link before
+            previous = current;                // Move "previous" along
+            current = current->next;           // Move "current" along
         }
-        return false;                          // Reached the end without finding it
+        if (current == nullptr)                // Not found
+            return nullptr;                    // Nothing removed
+        if (previous == nullptr)               // If it was the first link...
+            first = current->next;             // ...the next one becomes first
+        else                                   // Otherwise...
+            previous->next = current->next;    // ...link around it
+        return current;                        // Give back the removed link
     }
 
-    T find(bool (*match)(T, int), int value) const {  // Returns the first item where match(item, value) is true
-        ListNode<T>* current = head;           // Start at the first node
-        while (current != nullptr) {           // Check every node in turn
-            if (match(current->data, value))   // Call the function pointer to test this item
-                return current->data;          // Return the first matching item
-            current = current->next;           // Move to the next node
-        }
-        return nullptr;                        // No item matched
-    }
-
-    bool remove(T data) {                      // Removes the node holding this item; true if removed
-        ListNode<T>* current = head;           // Node being checked
-        ListNode<T>* previous = nullptr;       // Node before 'current' (none at the start)
-        while (current != nullptr) {           // Walk the list
-            if (current->data == data) {       // Found the node to remove
-                if (previous == nullptr)       // It is the first node
-                    head = current->next;      // The second node becomes the head
-                else                           // It is further along the list
-                    previous->next = current->next;  // Bypass it by linking previous to next
-                if (current == tail)           // It was the last node
-                    tail = previous;           // The previous node becomes the tail
-                delete current;                // Free the removed node
-                count--;                       // One fewer item in the list
-                return true;                   // Report success
-            }
-            previous = current;                // Step 'previous' forward
-            current = current->next;           // Step 'current' forward
-        }
-        return false;                          // Item was not in the list
-    }
-
-    T get(int index) const {                   // Returns the item at a position (0 = first), or nullptr
-        if (index < 0 || index >= count)       // Position outside the list
-            return nullptr;                    // Nothing to return
-        ListNode<T>* current = head;           // Start at the first node
-        for (int i = 0; i < index; i++)        // Step forward 'index' times
-            current = current->next;           // Move to the next node
-        return current->data;                  // Return the item at that position
-    }
-
-    void traverse(void (*visit)(T)) const {    // Calls 'visit' on every item, first to last
-        ListNode<T>* current = head;           // Start at the first node
+    int Count() const {                        // How many links are in the list?
+        int total = 0;                         // Start counting at zero
+        Link<T>* current = first;              // Start at the first link
         while (current != nullptr) {           // Until the end of the list
-            visit(current->data);              // Call the function pointer on this item
-            current = current->next;           // Move to the next node
+            total++;                           // Count this link
+            current = current->next;           // Move to the next link
         }
+        return total;                          // Give back the total
     }
 
-    int size() const { return count; }         // Returns how many items are stored
-    bool isEmpty() const { return head == nullptr; }  // True when the list has no nodes
+    void Display() const {                     // Shows every item, newest first
+        Link<T>* current = first;              // Start at the first link
+        while (current != nullptr) {           // Until the end of the list
+            current->Display();                // Show this item
+            current = current->next;           // Move to the next link
+        }
+    }
 };

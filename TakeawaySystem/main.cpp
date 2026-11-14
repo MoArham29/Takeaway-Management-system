@@ -1,78 +1,60 @@
+// main.cpp
+// Step 2 test: checks the tree and the list work before the real classes are written.
 #include <iostream>
-#include "Tree.h"
+#include <string>
+#include "BinaryTree.h"
 #include "LinkedList.h"
-#include "Supplier.h"
-#include "MenuItem.h"
-#include "Delivery.h"
-#include "SupplierNotFoundException.h"
-#include "InvalidPaymentException.h"
-#include "EmptyReportException.h"
 
-// ----- Functions passed as FUNCTION POINTERS to the data structures -----
-void printSupplier(Supplier* s) { std::cout << "  " << *s << std::endl; }
-void printDelivery(Delivery* d) { std::cout << "  " << *d << std::endl; }
+// A simple test item. The real program will store suppliers, stock and transactions instead.
+class TestItem {
+public:
+    int number;
+    std::string name;
+    TestItem(int number, std::string name) : number(number), name(name) {}
+    ~TestItem() { std::cout << "  [deleted] " << name << std::endl; }
+    void Display() const { std::cout << "  " << number << ": " << name << std::endl; }
+};
+
+// Used to test the tree's InOrder function, which takes a function pointer
+void shout(TestItem* item) {
+    std::cout << "  Visiting " << item->name << "!" << std::endl;
+}
 
 int main() {
-    //Suppliers: created on the heap with 'new', stored in the Tree
-    std::cout << "=== 1. Creating suppliers ===" << std::endl;
-    Tree<Supplier*> suppliers;
-    Supplier* meat = new Supplier("Fresh Meats Ltd", "01494 111222");
-    Supplier* buns = new Supplier("Bun Bakery", "01494 333444");
-    Supplier* veg  = new Supplier("Veg Direct", "01494 555666");
-    suppliers.insert(meat->getId(), meat);
-    suppliers.insert(buns->getId(), buns);
-    suppliers.insert(veg->getId(), veg);
-    std::cout << "Suppliers created (static counter): " << Supplier::getTotalCreated() << std::endl;
-    suppliers.inOrder(printSupplier);
+    std::cout << "=== Tree ===" << std::endl;
+    BinaryTree<TestItem*>* tree = new BinaryTree<TestItem*>();
+    tree->Insert(3, new TestItem(3, "Chicken"));
+    tree->Insert(1, new TestItem(1, "Beef"));
+    tree->Insert(5, new TestItem(5, "Chips"));
+    tree->Insert(2, new TestItem(2, "Buns"));
+    tree->Insert(4, new TestItem(4, "Lettuce"));
+    std::cout << "Items: " << tree->Count() << " (added as 3,1,5,2,4 but shown in order)" << std::endl;
+    tree->DisplayInOrder();
+    std::cout << "Find 5: " << tree->Find(5)->name << std::endl;
+    std::cout << "Find 9: " << (tree->Find(9) == nullptr ? "not found" : "found") << std::endl;
+    std::cout << "Delete 3 (has two children):" << std::endl;
+    tree->Delete(3);
+    tree->DisplayInOrder();
+    std::cout << "InOrder with a function pointer:" << std::endl;
+    tree->InOrder(shout);
 
-    // ----- 2. Operator overloading on Supplier -----
-    std::cout << "\n=== 2. Comparing suppliers ===" << std::endl;
-    std::cout << "meat < buns? " << (*meat < *buns ? "yes" : "no") << std::endl;
-    std::cout << "meat == meat? " << (*meat == *meat ? "yes" : "no") << std::endl;
+    std::cout << "\n=== Linked list ===" << std::endl;
+    LinkedList<TestItem*>* list = new LinkedList<TestItem*>();
+    list->Insert(new Link<TestItem*>(1, new TestItem(1, "Monday sales")));
+    list->Insert(new Link<TestItem*>(2, new TestItem(2, "Tuesday sales")));
+    list->Insert(new Link<TestItem*>(3, new TestItem(3, "Chicken purchase")));
+    std::cout << "Links: " << list->Count() << " (newest first)" << std::endl;
+    list->Display();
+    std::cout << "Find 2: ";
+    list->Find(2)->Display();
+    Link<TestItem*>* removed = list->Delete(2);
+    std::cout << "Removed link 2:" << std::endl;
+    delete removed->GetData();
+    delete removed;
+    list->Display();
 
-    // ----- 3. Menu items: three overloaded constructors -----
-    std::cout << "\n=== 3. Menu items ===" << std::endl;
-    MenuItem blank;                                   // default constructor
-    MenuItem chips("Chips", 2.50);                    // name + price
-    MenuItem burger("Cheeseburger", 6.99, 2.10);      // name + price + cost
-    std::cout << "  " << blank << std::endl;
-    std::cout << "  " << chips << std::endl;
-    std::cout << "  " << burger << std::endl;
-
-    // ----- 4. Deliveries: point to suppliers, stored in the LinkedList -----
-    std::cout << "\n=== 4. Deliveries ===" << std::endl;
-    LinkedList<Delivery*> deliveries;
-    deliveries.append(new Delivery(meat, "2026-12-01", "20kg beef mince", 145.00));
-    deliveries.append(new Delivery(buns, "2026-12-01", "200 brioche buns", 60.00));
-    deliveries.append(new Delivery(veg,  "2026-12-02", "Lettuce, tomato, onion", 32.50));
-    deliveries.traverse(printDelivery);
-
-    // ----- 5. Exceptions: throw and catch each one -----
-    std::cout << "\n=== 5. Exceptions ===" << std::endl;
-    try {
-        int wanted = 99;
-        Supplier* found = suppliers.search(wanted);
-        if (found == nullptr) throw SupplierNotFoundException(wanted);
-        std::cout << "  Found: " << *found << std::endl;
-    } catch (const SupplierNotFoundException& e) {
-        std::cout << "  Caught: " << e.what() << std::endl;
-    }
-    try {
-        throw InvalidPaymentException("amount must be more than GBP 0");
-    } catch (const std::exception& e) {      // caught through the BASE class
-        std::cout << "  Caught: " << e.what() << std::endl;
-    }
-    try {
-        throw EmptyReportException("2026-12-01");
-    } catch (const std::exception& e) {
-        std::cout << "  Caught: " << e.what() << std::endl;
-    }
-
-    // ----- 6. Clean up: every 'new' needs a matching 'delete' -----
-    std::cout << "\n=== 6. Cleaning up memory ===" << std::endl;
-    for (int i = 0; i < deliveries.size(); i++) delete deliveries.get(i);
-    delete meat;
-    delete buns;
-    delete veg;
+    std::cout << "\n=== Cleaning up (the tree and list delete their own items) ===" << std::endl;
+    delete list;
+    delete tree;
     return 0;
 }

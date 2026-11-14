@@ -1,60 +1,70 @@
 // main.cpp
-// Step 2 test: checks the tree and the list work before the real classes are written.
+// Step 3 test: suppliers and stock items stored in trees, plus the three exceptions.
 #include <iostream>
-#include <string>
 #include "BinaryTree.h"
-#include "LinkedList.h"
+#include "Supplier.h"
+#include "StockItem.h"
+#include "NotFoundException.h"
+#include "InsufficientFundsException.h"
+#include "InvalidAmountException.h"
 
-// A simple test item. The real program will store suppliers, stock and transactions instead.
-class TestItem {
-public:
-    int number;
-    std::string name;
-    TestItem(int number, std::string name) : number(number), name(name) {}
-    ~TestItem() { std::cout << "  [deleted] " << name << std::endl; }
-    void Display() const { std::cout << "  " << number << ": " << name << std::endl; }
-};
-
-// Used to test the tree's InOrder function, which takes a function pointer
-void shout(TestItem* item) {
-    std::cout << "  Visiting " << item->name << "!" << std::endl;
+// Passed to the stock tree as a function pointer: prints a line if the item needs ordering
+void showIfLow(StockItem* item) {
+    if (item->amountToOrder() > 0) {
+        std::cout << "  " << item->getName() << ": order " << item->amountToOrder()
+                  << " " << item->getUnit() << std::endl;
+    }
 }
 
 int main() {
-    std::cout << "=== Tree ===" << std::endl;
-    BinaryTree<TestItem*>* tree = new BinaryTree<TestItem*>();
-    tree->Insert(3, new TestItem(3, "Chicken"));
-    tree->Insert(1, new TestItem(1, "Beef"));
-    tree->Insert(5, new TestItem(5, "Chips"));
-    tree->Insert(2, new TestItem(2, "Buns"));
-    tree->Insert(4, new TestItem(4, "Lettuce"));
-    std::cout << "Items: " << tree->Count() << " (added as 3,1,5,2,4 but shown in order)" << std::endl;
-    tree->DisplayInOrder();
-    std::cout << "Find 5: " << tree->Find(5)->name << std::endl;
-    std::cout << "Find 9: " << (tree->Find(9) == nullptr ? "not found" : "found") << std::endl;
-    std::cout << "Delete 3 (has two children):" << std::endl;
-    tree->Delete(3);
-    tree->DisplayInOrder();
-    std::cout << "InOrder with a function pointer:" << std::endl;
-    tree->InOrder(shout);
+    std::cout << "=== Suppliers ===" << std::endl;
+    BinaryTree<Supplier*>* suppliers = new BinaryTree<Supplier*>();
+    Supplier* meat = new Supplier("Fresh Meats Ltd", "01494 111222");
+    Supplier* buns = new Supplier("Bun Bakery", "01494 333444");
+    suppliers->Insert(meat->getId(), meat);
+    suppliers->Insert(buns->getId(), buns);
+    suppliers->DisplayInOrder();
+    std::cout << "Supplier 1 == Supplier 2? " << (*meat == *buns ? "yes" : "no") << std::endl;
 
-    std::cout << "\n=== Linked list ===" << std::endl;
-    LinkedList<TestItem*>* list = new LinkedList<TestItem*>();
-    list->Insert(new Link<TestItem*>(1, new TestItem(1, "Monday sales")));
-    list->Insert(new Link<TestItem*>(2, new TestItem(2, "Tuesday sales")));
-    list->Insert(new Link<TestItem*>(3, new TestItem(3, "Chicken purchase")));
-    std::cout << "Links: " << list->Count() << " (newest first)" << std::endl;
-    list->Display();
-    std::cout << "Find 2: ";
-    list->Find(2)->Display();
-    Link<TestItem*>* removed = list->Delete(2);
-    std::cout << "Removed link 2:" << std::endl;
-    delete removed->GetData();
-    delete removed;
-    list->Display();
+    std::cout << "\n=== Stock (each item starts full) ===" << std::endl;
+    BinaryTree<StockItem*>* stock = new BinaryTree<StockItem*>();
+    StockItem* chicken = new StockItem("Chicken", "boxes", 15, meat);
+    StockItem* rolls = new StockItem("Burger buns", "packs", 20, buns);
+    stock->Insert(chicken->getId(), chicken);
+    stock->Insert(rolls->getId(), rolls);
+    stock->DisplayInOrder();
 
-    std::cout << "\n=== Cleaning up (the tree and list delete their own items) ===" << std::endl;
-    delete list;
-    delete tree;
+    std::cout << "\n=== Nightly count, then the order list ===" << std::endl;
+    chicken->setQuantity(4);
+    rolls->setQuantity(18);
+    stock->DisplayInOrder();
+    std::cout << "Order list:" << std::endl;
+    stock->InOrder(showIfLow);
+
+    std::cout << "\n=== Delivery arrives: chicken += 11 ===" << std::endl;
+    *chicken += 11;
+    chicken->Display();
+
+    std::cout << "\n=== Exceptions ===" << std::endl;
+    try {
+        chicken->setQuantity(-2);
+    } catch (InvalidAmountException& e) {
+        std::cout << "Error: " << e.what() << std::endl;
+    }
+    try {
+        if (suppliers->Find(99) == nullptr) throw NotFoundException("Supplier", 99);
+    } catch (NotFoundException& e) {
+        std::cout << "Error: " << e.what() << std::endl;
+    }
+    try {
+        throw InsufficientFundsException(5000.00, 1200.50);
+    } catch (InsufficientFundsException& e) {
+        std::cout << "Error: " << e.what() << " (cost " << e.getCost()
+                  << ", balance " << e.getBalance() << ")" << std::endl;
+    }
+
+    std::cout << "\n=== Cleaning up ===" << std::endl;
+    delete stock;          // stock first, because each item points to a supplier
+    delete suppliers;
     return 0;
 }

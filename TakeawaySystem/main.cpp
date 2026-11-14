@@ -1,49 +1,45 @@
 // main.cpp
-// Step 4 test: the three kinds of transaction, stored together in one linked list.
+// Step 5 test: weekly summaries, adding two weeks together, and reports chosen by function pointer.
 #include <iostream>
-#include <iomanip>
-#include "LinkedList.h"
-#include "Supplier.h"
-#include "StockItem.h"
-#include "Transaction.h"
-#include "DailySales.h"
-#include "Purchase.h"
-#include "Expense.h"
+#include <string>
+#include "Summary.h"
+#include "ReportCalculator.h"
 
 int main() {
-    std::cout << std::fixed << std::setprecision(2);
+    std::cout << "=== Week 1 ===" << std::endl;
+    Summary week1("Week 1");
+    week1.addMoneyIn(1088.85);    week1.addClosingBalance(4088.85);
+    week1.addMoneyIn(1088.36);    week1.addClosingBalance(5177.21);
+    week1.addMoneyOut(657.00);    week1.addMoneyIn(515.00);   week1.addClosingBalance(5035.21);
+    week1.addMoneyIn(1171.15);    week1.addMoneyOut(650.00);  week1.addClosingBalance(5556.35);
+    std::cout << week1 << std::endl;
 
-    Supplier* meat = new Supplier("Fresh Meats Ltd", "01494 111222");
-    Supplier* cleaning = new Supplier("Clean & Pack Ltd", "01494 777888");
-    StockItem* chicken = new StockItem("Chicken", "boxes", 15, meat);
+    std::cout << "\n=== Week 2 ===" << std::endl;
+    Summary week2("Week 2");
+    week2.addMoneyIn(1740.61);    week2.addMoneyOut(1200.00); week2.addClosingBalance(6096.97);
+    week2.addMoneyIn(2003.05);    week2.addMoneyOut(630.00);  week2.addClosingBalance(7470.02);
+    std::cout << week2 << std::endl;
 
-    std::cout << "=== Recording transactions ===" << std::endl;
-    LinkedList<Transaction*>* statement = new LinkedList<Transaction*>();
-    double balance = 3000.00;
-    std::cout << "Starting balance: GBP " << balance << std::endl;
+    std::cout << "\n=== Copy (deep copy test) ===" << std::endl;
+    Summary copyOfWeek1 = week1;              // copy constructor makes its own array
+    copyOfWeek1.addClosingBalance(9999.99);   // changing the copy...
+    std::cout << "Copy has " << copyOfWeek1.getDays() << " days, original still has "
+              << week1.getDays() << " days" << std::endl;   // ...does not change the original
 
-    // Each one is stored as a Transaction*, but is really a DailySales, Purchase or Expense
-    Transaction* t1 = new DailySales("Mon 07 Dec", 420.50, 680.25);
-    Transaction* t2 = new DailySales("Tue 08 Dec", 515.00);                       // cash only
-    Transaction* t3 = new Purchase("Wed 09 Dec", meat, chicken, 11, 330.00);
-    Transaction* t4 = new Purchase("Wed 09 Dec", cleaning, "Cleaning products", 35.00);
-    Transaction* t5 = new Expense("Thu 10 Dec", "Staff wages", 650.00);
+    std::cout << "\n=== Week 1 + Week 2 ===" << std::endl;
+    Summary bothWeeks = week1 + week2;        // overloaded +
+    std::cout << bothWeeks << std::endl;
 
-    Transaction* all[5] = { t1, t2, t3, t4, t5 };
-    for (int i = 0; i < 5; i++) {
-        // getEffect() runs the right version for each type: + for sales, - for purchases and expenses
-        balance += all[i]->getEffect();
-        statement->Insert(new Link<Transaction*>(all[i]->getId(), all[i]));
-        std::cout << "  Transaction " << all[i]->getId() << " -> balance GBP " << balance << std::endl;
+    std::cout << "\n=== Reports (each picked with a function pointer) ===" << std::endl;
+    Calculation calculations[4] = {
+        ReportCalculator::profit,
+        ReportCalculator::averageDailyTakings,
+        ReportCalculator::lowestBalance,
+        ReportCalculator::highestBalance
+    };
+    std::string titles[4] = { "Profit", "Average daily takings", "Lowest balance", "Highest balance" };
+    for (int i = 0; i < 4; i++) {
+        ReportCalculator::show(titles[i], calculations[i], bothWeeks);
     }
-
-    std::cout << "\n=== Statement (newest first) ===" << std::endl;
-    statement->Display();       // each transaction shows itself in its own way
-
-    std::cout << "\n=== Cleaning up ===" << std::endl;
-    delete statement;           // deletes all five transactions
-    delete chicken;
-    delete cleaning;
-    delete meat;
     return 0;
 }

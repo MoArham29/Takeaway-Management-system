@@ -1,45 +1,54 @@
 // main.cpp
-// Step 5 test: weekly summaries, adding two weeks together, and reports chosen by function pointer.
+// Step 6 test: the Business class ties everything together.
 #include <iostream>
-#include <string>
-#include "Summary.h"
-#include "ReportCalculator.h"
+#include "Business.h"
+#include "NotFoundException.h"
+#include "InsufficientFundsException.h"
 
 int main() {
-    std::cout << "=== Week 1 ===" << std::endl;
-    Summary week1("Week 1");
-    week1.addMoneyIn(1088.85);    week1.addClosingBalance(4088.85);
-    week1.addMoneyIn(1088.36);    week1.addClosingBalance(5177.21);
-    week1.addMoneyOut(657.00);    week1.addMoneyIn(515.00);   week1.addClosingBalance(5035.21);
-    week1.addMoneyIn(1171.15);    week1.addMoneyOut(650.00);  week1.addClosingBalance(5556.35);
-    std::cout << week1 << std::endl;
+    Business shop("Arham's Takeaway", 1000.00);
 
-    std::cout << "\n=== Week 2 ===" << std::endl;
-    Summary week2("Week 2");
-    week2.addMoneyIn(1740.61);    week2.addMoneyOut(1200.00); week2.addClosingBalance(6096.97);
-    week2.addMoneyIn(2003.05);    week2.addMoneyOut(630.00);  week2.addClosingBalance(7470.02);
-    std::cout << week2 << std::endl;
+    shop.addSupplier("Fresh Meats Ltd", "01494 111222");      // supplier 1
+    shop.addSupplier("Clean & Pack Ltd", "01494 777888");     // supplier 2
+    shop.addStockItem("Chicken", "boxes", 15, 1);             // item 1
+    shop.addStockItem("Beef mince", "boxes", 8, 1);           // item 2
+    shop.printSuppliers();
+    shop.printStock();
 
-    std::cout << "\n=== Copy (deep copy test) ===" << std::endl;
-    Summary copyOfWeek1 = week1;              // copy constructor makes its own array
-    copyOfWeek1.addClosingBalance(9999.99);   // changing the copy...
-    std::cout << "Copy has " << copyOfWeek1.getDays() << " days, original still has "
-              << week1.getDays() << " days" << std::endl;   // ...does not change the original
+    shop.startPeriod("Test week");
 
-    std::cout << "\n=== Week 1 + Week 2 ===" << std::endl;
-    Summary bothWeeks = week1 + week2;        // overloaded +
-    std::cout << bothWeeks << std::endl;
+    std::cout << "\n--- Day 1 ---" << std::endl;
+    shop.recordSales("Mon 07 Dec", 400.00, 600.00);
+    shop.recordStockCount(1, 4);
+    shop.recordStockCount(2, 8);
+    shop.closeDay("Mon 07 Dec");
 
-    std::cout << "\n=== Reports (each picked with a function pointer) ===" << std::endl;
-    Calculation calculations[4] = {
-        ReportCalculator::profit,
-        ReportCalculator::averageDailyTakings,
-        ReportCalculator::lowestBalance,
-        ReportCalculator::highestBalance
-    };
-    std::string titles[4] = { "Profit", "Average daily takings", "Lowest balance", "Highest balance" };
-    for (int i = 0; i < 4; i++) {
-        ReportCalculator::show(titles[i], calculations[i], bothWeeks);
+    std::cout << "\n--- Day 2 (delivery) ---" << std::endl;
+    shop.printOrderList();
+    shop.recordPurchase("Tue 08 Dec", 1, 11, 330.00);         // 11 boxes chicken
+    shop.recordPurchase("Tue 08 Dec", 2, "Cleaning products", 35.00);
+    shop.recordExpense("Tue 08 Dec", "Staff wages", 500.00);
+    shop.printOrderList();
+    shop.closeDay("Tue 08 Dec");
+
+    std::cout << "\n--- Errors ---" << std::endl;
+    try {
+        shop.recordExpense("Tue 08 Dec", "Rent", 5000.00);
+    } catch (InsufficientFundsException& e) {
+        std::cout << "Error: " << e.what() << std::endl;
     }
+    try {
+        shop.findStockItem(42);
+    } catch (NotFoundException& e) {
+        std::cout << "Error: " << e.what() << std::endl;
+    }
+
+    std::cout << std::endl;
+    Summary week = shop.endPeriod();
+    std::cout << week << std::endl;
+
+    std::cout << std::endl;
+    shop.printStatement();
+    std::cout << std::endl;
     return 0;
 }

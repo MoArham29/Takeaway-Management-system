@@ -62,6 +62,9 @@ void Business::printSuppliers() const {
 // ---------- Stock ----------
 
 StockItem* Business::addStockItem(const std::string& name, const std::string& unit, int fullLevel, int supplierId) {
+    if (fullLevel <= 0) {
+        throw InvalidAmountException("the full level must be more than 0");
+    }
     Supplier* s = findSupplier(supplierId);         // throws if the supplier doesn't exist
     StockItem* item = new StockItem(name, unit, fullLevel, s);
     s->addUse();
@@ -185,7 +188,8 @@ double Business::getBalance() const {
 }
 
 void Business::printStatement() const {
-    std::cout << "STATEMENT (newest first, " << transactions.Count() << " transactions):" << std::endl;
+    int count = transactions.Count();
+    std::cout << "STATEMENT (newest first, " << count << (count == 1 ? " transaction" : " transactions") << "):" << std::endl;
     transactions.Display();
 }
 

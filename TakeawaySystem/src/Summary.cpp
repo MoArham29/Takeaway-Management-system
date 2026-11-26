@@ -78,7 +78,7 @@ Summary Summary::operator+(const Summary& other) const {
 
 std::ostream& operator<<(std::ostream& out, const Summary& s) {
     out << std::fixed << std::setprecision(2)
-        << "--- " << s.label << " (" << s.days << " days) ---\n"
+        << "--- " << s.label << " (" << s.days << (s.days == 1 ? " day" : " days") << ") ---\n"
         << "  Money in:  GBP " << s.totalIn << "\n"
         << "  Money out: GBP " << s.totalOut << "\n"
         << "  Closing balance each day:";

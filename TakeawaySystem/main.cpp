@@ -90,11 +90,9 @@ void showReports(const Summary& s) {
 
 int main() {
     std::cout << "===== TAKEAWAY BACK OFFICE =====" << std::endl;
-    std::string name = readText("Business name: ");
-    double opening = readMoney("Money in the business today (GBP): ");
+    // The system is set up for one takeaway: its name and the money it starts with
+    Business shop("Arham's Takeaway", 3000.00);
     std::string today = readText("Today's date (e.g. Mon 07 Dec): ");
-
-    Business shop(name, opening);
     int weekNumber = 1;
     shop.startPeriod("Week 1");
     Summary allWeeks("All weeks");      // every finished week is added onto this

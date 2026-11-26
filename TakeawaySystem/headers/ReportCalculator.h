@@ -1,5 +1,5 @@
 // ReportCalculator.h
-// Works out figures from a Summary, such as profit or average daily sales.
+// Works out figures from a Summary, such as profit or average daily takings.
 // Each calculation is a separate function, so we can pick one using a function pointer.
 #pragma once
 #include <string>

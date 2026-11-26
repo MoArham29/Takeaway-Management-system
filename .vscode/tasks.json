@@ -1,0 +1,12 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "Build and run Takeaway",
+      "type": "shell",
+      "command": "mkdir -p build && clang++ -std=c++17 -Wall -g -I TakeawaySystem/headers TakeawaySystem/src/*.cpp TakeawaySystem/main.cpp -o build/takeaway && ./build/takeaway",
+      "group": { "kind": "build", "isDefault": true },
+      "problemMatcher": ["$gcc"]
+    }
+  ]
+}
